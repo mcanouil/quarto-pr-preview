@@ -6,9 +6,11 @@ on:
     types: [created]
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
+  pull-requests: write
+  repository-projects: write
 
 concurrency:
   group: "${{ github.event.pull_request.number }}-pages"
@@ -46,3 +48,28 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Post Comment
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+          PR_COMMENT: |
+
+            ---
+
+            `/preview` is running for PR #${{ github.event.issue.number }}.
+
+            Preview URL: <${{ steps.deployment.outputs.page_url }}/pr-${{ github.event.issue.number }}/>
+
+        run: |
+          PR_BODY=$(gh pr view "${NUMBER}" --json body -q '.body')
+          echo -e "${PR_BODY}" > pr_comment.txt
+          if [[ $PR_BODY != *"`/preview` is running for PR"* ]]; then
+            echo -e "${PR_COMMENT}" >> pr_comment.txt
+            PR_BRANCH=$(gh pr view "${NUMBER}" --json headRefName -q '.headRefName')
+            PR_BRANCH=${PR_BRANCH//\//-}
+            sed -i "s/preview-dot/preview-${NUMBER}-dot/" pr_comment.txt
+            gh pr edit "${NUMBER}" --body-file pr_comment.txt
+            rm pr_comment.txt
+          fi
