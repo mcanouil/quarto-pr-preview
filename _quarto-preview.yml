@@ -1,0 +1,6 @@
+website:
+  announcement:
+    icon: exclamation-circle
+    dismissable: false
+    content: "**PREVIEW** - This website is a preview from an ongoing Pull Request on GitHub."
+    type: info

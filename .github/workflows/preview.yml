@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "${{ github.event.pull_request.number }}-pages"
+  cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
+
+jobs:
+  preview:
+    if: >-
+      startsWith(github.event.comment.body, '/preview') &&
+      github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: pre-release
+          tinytex: false
+      
+      - name: Render Quarto Project
+        shell: bash
+        run: |
+          quarto render --profile preview --output-dir "_site/${{ github.event.pull_request.number }}"
+      
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
