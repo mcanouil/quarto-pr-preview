@@ -10,6 +10,7 @@ permissions:
   pages: write
   id-token: write
   pull-requests: write
+  repository-projects: read
 
 concurrency:
   group: "${{ github.event.pull_request.number }}-pages"
