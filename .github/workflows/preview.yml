@@ -34,8 +34,8 @@ jobs:
       - name: Render Quarto Project
         shell: bash
         run: |
-          quarto render
-          quarto render --profile preview --output-dir "_site/${{ github.event.pull_request.number }}"
+          quarto render --use-freezer
+          quarto render --profile preview --use-freezer --output-dir "_site/pr-${{ github.event.pull_request.number }}"
       
       - uses: actions/configure-pages@v5
 
