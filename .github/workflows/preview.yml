@@ -6,11 +6,9 @@ on:
     types: [created]
 
 permissions:
-  contents: write
   pages: write
   id-token: write
   pull-requests: write
-  repository-projects: write
 
 concurrency:
   group: "${{ github.event.pull_request.number }}-pages"
@@ -60,7 +58,7 @@ jobs:
 
             `/preview` is running for PR #${{ github.event.issue.number }}.
 
-            Preview URL: <${{ steps.deployment.outputs.page_url }}/pr-${{ github.event.issue.number }}/>
+            Preview URL: <${{ steps.deployment.outputs.page_url }}pr-${{ github.event.issue.number }}/>
 
         run: |
           PR_BODY=$(gh pr view "${NUMBER}" --json body -q '.body')
