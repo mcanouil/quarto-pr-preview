@@ -6,6 +6,7 @@ on:
     types: [created]
 
 permissions:
+  contents: read
   pages: write
   id-token: write
   pull-requests: write
