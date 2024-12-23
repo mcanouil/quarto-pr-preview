@@ -62,7 +62,7 @@ jobs:
 
             `/preview` is running for PR #${{ github.event.issue.number }}.
 
-            Preview URL: <${{ steps.gh-pages-meta.outputs.base_url }}pr-${{ github.event.issue.number }}/>
+            Preview URL: <${{ steps.gh-pages-meta.outputs.base_url }}/preview/pr-${{ github.event.issue.number }}/>
 
         run: |
           PR_BODY=$(gh pr view "${NUMBER}" --json body -q '.body')
