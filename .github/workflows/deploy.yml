@@ -26,12 +26,23 @@ jobs:
       
       - name: Render Quarto Project
         shell: bash
+        env:
+          GH_PAGES: gh-pages
         run: |
           git config --local user.name github-actions[bot]
           git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
           quarto render
-          git fetch origin gh-pages
-          git checkout gh-pages -- preview
+          git fetch origin "${GH_PAGES}"
+          git checkout "${GH_PAGES}" -- preview
           mv preview _site/
-          quarto publish gh-pages --no-browser --no-render --no-prompt
+          BUILD_DIR=$(mktemp -d)
+          cp -r _site/* ${BUILD_DIR}/
+          git fetch origin "${GH_PAGES}"
+          git checkout "${GH_PAGES}"
+          git pull origin "${GH_PAGES}"
+          rm -rf .
+          cp -rf "${BUILD_DIR}/*" .
+          git add .
+          git commit -m "ci: deploy site"
+          git push origin "${GH_PAGES}"
       

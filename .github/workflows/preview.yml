@@ -17,6 +17,7 @@ concurrency:
 env:
   GH_TOKEN: ${{ github.token }}
   NUMBER: ${{ github.event.issue.number }}
+  GH_PAGES: gh-pages
 
 jobs:
   preview:
@@ -40,14 +41,14 @@ jobs:
           BUILD_DIR=$(mktemp -d)
           quarto render --profile preview --output-dir "pr-${NUMBER}"
           cp -r "pr-${NUMBER}" "${BUILD_DIR}/"
-          git fetch origin gh-pages
-          git checkout gh-pages
-          git pull origin gh-pages
+          git fetch origin "${GH_PAGES}"
+          git checkout "${GH_PAGES}"
+          git pull origin "${GH_PAGES}"
           rm -rf "preview/pr-${NUMBER}" || true
           cp -rf "${BUILD_DIR}/pr-${NUMBER}" preview/
           git add preview/pr-${NUMBER}
           git commit -m "ci: Preview PR #${NUMBER}"
-          git push origin gh-pages
+          git push origin "${GH_PAGES}"
 
       - name: Get GitHub Pages meta
         id: gh-pages-meta
@@ -79,15 +80,15 @@ jobs:
       - name: Clean Up outdated preview
         shell: bash
         run: |
-          git fetch origin gh-pages
-          git checkout gh-pages
-          git pull origin gh-pages
+          git fetch origin "${GH_PAGES}"
+          git checkout "${GH_PAGES}"
+          git pull origin "${GH_PAGES}"
           for previewdir in $(ls -d pr-*); do
             NUMBER=$(echo ${previewdir} | sed 's/pr-//')
             PR_STATE=$(gh pr view "${NUMBER}" --json state -q '.state')
             if [[ "${PR_STATE}" == "CLOSED" ]]; then
               git rm -r "${previewdir}"
               git commit -m "ci: Clean up preview PR #${NUMBER}"
-              git push origin gh-pages
+              git push origin "${GH_PAGES}"
             fi
           done
