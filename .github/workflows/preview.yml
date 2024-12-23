@@ -43,8 +43,8 @@ jobs:
           git fetch origin gh-pages
           git checkout gh-pages
           git pull origin gh-pages
-          git rm -r "preview/pr-${NUMBER}" || true
-          cp -r "${BUILD_DIR}/pr-${NUMBER}" preview/
+          rm -rf "preview/pr-${NUMBER}" || true
+          cp -rf "${BUILD_DIR}/pr-${NUMBER}" preview/
           git add preview/pr-${NUMBER}
           git commit -m "ci: Preview PR #${NUMBER}"
           git push origin gh-pages
