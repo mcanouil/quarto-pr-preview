@@ -13,7 +13,7 @@ permissions:
   repository-projects: read
 
 concurrency:
-  group: "${{ github.event.pull_request.number }}-pages"
+  group: "${{ github.event.pull_request.number }}-preview"
   cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
 
 jobs:
@@ -35,19 +35,20 @@ jobs:
       
       - name: Render Quarto Project
         shell: bash
+        env:
+          NUMBER: ${{ github.event.issue.number }}
         run: |
-          quarto render --use-freezer
-          quarto render --profile preview --use-freezer --output-dir "_site/pr-${{ github.event.issue.number }}"
-      
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: "_site"
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          git config --local user.name github-actions[bot]
+          git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
+          BUILD_DIR=$(mktemp -d)
+          quarto render --profile preview --output-dir "pr-${NUMBER}"
+          cp -r "pr-${NUMBER}" "${BUILD_DIR}/"
+          git checkout gh-pages
+          git pull origin gh-pages
+          cp -r "${BUILD_DIR}/pr-${NUMBER}" .
+          git add .
+          git commit -m "ci: Preview PR #${NUMBER}"
+          git push origin gh-pages
 
       - name: Post Comment
         shell: bash
@@ -73,3 +74,23 @@ jobs:
             gh pr edit "${NUMBER}" --body-file pr_comment.txt
             rm pr_comment.txt
           fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      
+      - name: Clean Up preview
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          for dir in $(ls -d pr-*); do
+            NUMBER=$(echo $dir | sed 's/pr-//')
+            PR_STATE=$(gh pr view "${NUMBER}" --json state -q '.state')
+            if [[ "${PR_STATE}" == "CLOSED" ]]; then
+              git rm -r "$dir"
+              git commit -m "ci: Clean up preview PR #${NUMBER}"
+              git push origin gh-pages
+            fi
+          done
