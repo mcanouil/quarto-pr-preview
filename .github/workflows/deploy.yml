@@ -33,16 +33,17 @@ jobs:
           git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
           quarto render
           git fetch origin "${GH_PAGES}"
-          git checkout "${GH_PAGES}" -- preview
+          git checkout origin/"${GH_PAGES}" -- preview
           mv preview _site/
-          BUILD_DIR=$(mktemp -d)
-          cp -r _site/* ${BUILD_DIR}/
-          git fetch origin "${GH_PAGES}"
-          git checkout "${GH_PAGES}"
-          git pull origin "${GH_PAGES}"
-          rm -rf .
-          cp -rf "${BUILD_DIR}/*" .
-          git add .
-          git commit -m "ci: deploy site"
-          git push origin "${GH_PAGES}"
+          quarto publish gh-pages --no-prompt --no-render --no-browser
+          # BUILD_DIR=$(mktemp -d)
+          # cp -r _site/* ${BUILD_DIR}/
+          # git fetch origin "${GH_PAGES}"
+          # git checkout "${GH_PAGES}"
+          # git pull origin "${GH_PAGES}"
+          # rm -rf .
+          # cp -rf "${BUILD_DIR}/*" .
+          # git add .
+          # git commit -m "ci: deploy site"
+          # git push origin "${GH_PAGES}"
       
