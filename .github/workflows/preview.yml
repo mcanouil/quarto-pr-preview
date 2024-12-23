@@ -26,12 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
           version: pre-release
           tinytex: false
-      
+
       - name: Render Quarto Project
         shell: bash
         run: |
@@ -48,6 +48,10 @@ jobs:
           git commit -m "ci: Preview PR #${NUMBER}"
           git push origin gh-pages
 
+      - name: Get GitHub Pages meta
+        id: gh-pages-meta
+        uses: actions/configure-pages@v5
+
       - name: Post Comment
         shell: bash
         env:
@@ -57,7 +61,7 @@ jobs:
 
             `/preview` is running for PR #${{ github.event.issue.number }}.
 
-            Preview URL: <${{ steps.deployment.outputs.page_url }}pr-${{ github.event.issue.number }}/>
+            Preview URL: <${{ steps.gh-pages-meta.outputs.page_url }}pr-${{ github.event.issue.number }}/>
 
         run: |
           PR_BODY=$(gh pr view "${NUMBER}" --json body -q '.body')
