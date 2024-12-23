@@ -33,5 +33,5 @@ jobs:
           git fetch origin gh-pages
           git checkout gh-pages -- preview
           mv preview _site/
-          quarto publish gh-pages --no-browser --no-render
+          quarto publish gh-pages --no-browser --no-render --no-prompt
       
