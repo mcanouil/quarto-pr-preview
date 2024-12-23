@@ -38,7 +38,7 @@ jobs:
           git config --local user.name github-actions[bot]
           git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
           BUILD_DIR=$(mktemp -d)
-          quarto render --profile preview --output-dir "pr-${NUMBER}"
+          quarto render --profile preview --output-dir "preview/pr-${NUMBER}"
           cp -r "pr-${NUMBER}" "${BUILD_DIR}/"
           git fetch origin gh-pages
           git checkout gh-pages

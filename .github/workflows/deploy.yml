@@ -29,5 +29,9 @@ jobs:
         run: |
           git config --local user.name github-actions[bot]
           git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
-          quarto publish gh-pages --no-browser
+          quarto render
+          git fetch origin gh-pages
+          git checkout gh-pages -- preview
+          mv preview _site/
+          quarto publish gh-pages --no-browser --no-render
       
