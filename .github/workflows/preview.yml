@@ -6,9 +6,7 @@ on:
     types: [created]
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
   pull-requests: write
   repository-projects: read
 
@@ -16,52 +14,58 @@ concurrency:
   group: "${{ github.event.pull_request.number }}-preview"
   cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
 
+env:
+  GH_TOKEN: ${{ github.token }}
+  NUMBER: ${{ github.event.issue.number }}
+  GH_PAGES: gh-pages
+
 jobs:
   preview:
     if: >-
       startsWith(github.event.comment.body, '/preview') &&
       github.event.issue.pull_request
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      
+        with:
+          ref: refs/pull/${{ github.event.issue.number }}/merge
+
       - uses: quarto-dev/quarto-actions/setup@v2
         with:
           version: pre-release
           tinytex: false
-      
+
       - name: Render Quarto Project
         shell: bash
-        env:
-          NUMBER: ${{ github.event.issue.number }}
         run: |
           git config --local user.name github-actions[bot]
           git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
           BUILD_DIR=$(mktemp -d)
           quarto render --profile preview --output-dir "pr-${NUMBER}"
           cp -r "pr-${NUMBER}" "${BUILD_DIR}/"
-          git checkout gh-pages
-          git pull origin gh-pages
-          cp -r "${BUILD_DIR}/pr-${NUMBER}" .
-          git add .
-          git commit -m "ci: Preview PR #${NUMBER}"
-          git push origin gh-pages
+          git fetch origin "${GH_PAGES}"
+          git checkout "${GH_PAGES}"
+          git pull origin "${GH_PAGES}"
+          rm -rf "preview/pr-${NUMBER}" || true
+          cp -rf "${BUILD_DIR}/pr-${NUMBER}" preview/
+          git add preview/pr-${NUMBER} || echo "No changes."
+          git commit -m "ci: Preview PR #${NUMBER}" || echo "No changes."
+          git push origin "${GH_PAGES}" || echo "No changes."
+
+      - name: Get GitHub Pages meta
+        id: gh-pages-meta
+        uses: actions/configure-pages@v5
 
       - name: Post Comment
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          NUMBER: ${{ github.event.issue.number }}
           PR_COMMENT: |
 
             ---
 
             `/preview` is running for PR #${{ github.event.issue.number }}.
 
-            Preview URL: <${{ steps.deployment.outputs.page_url }}pr-${{ github.event.issue.number }}/>
+            Preview URL: <${{ steps.gh-pages-meta.outputs.base_url }}/preview/pr-${{ github.event.issue.number }}/>
 
         run: |
           PR_BODY=$(gh pr view "${NUMBER}" --json body -q '.body')
@@ -75,22 +79,18 @@ jobs:
             rm pr_comment.txt
           fi
 
-      - uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-      
-      - name: Clean Up preview
+      - name: Clean Up outdated preview
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          NUMBER: ${{ github.event.issue.number }}
         run: |
-          for dir in $(ls -d pr-*); do
-            NUMBER=$(echo $dir | sed 's/pr-//')
+          git fetch origin "${GH_PAGES}"
+          git checkout "${GH_PAGES}"
+          git pull origin "${GH_PAGES}"
+          for previewdir in $(ls -d preview/pr-*); do
+            NUMBER=$(echo ${previewdir} | sed 's/preview\/pr-//')
             PR_STATE=$(gh pr view "${NUMBER}" --json state -q '.state')
             if [[ "${PR_STATE}" == "CLOSED" ]]; then
-              git rm -r "$dir"
+              git rm -r "${previewdir}"
               git commit -m "ci: Clean up preview PR #${NUMBER}"
-              git push origin gh-pages
+              git push origin "${GH_PAGES}"
             fi
           done
