@@ -6,15 +6,17 @@ on:
     types: [created]
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
   pull-requests: write
   repository-projects: read
 
 concurrency:
   group: "${{ github.event.pull_request.number }}-preview"
   cancel-in-progress: ${{ github.event_name != 'issue_comment' }}
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  NUMBER: ${{ github.event.issue.number }}
 
 jobs:
   preview:
@@ -32,8 +34,6 @@ jobs:
       
       - name: Render Quarto Project
         shell: bash
-        env:
-          NUMBER: ${{ github.event.issue.number }}
         run: |
           git config --local user.name github-actions[bot]
           git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -51,8 +51,6 @@ jobs:
       - name: Post Comment
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          NUMBER: ${{ github.event.issue.number }}
           PR_COMMENT: |
 
             ---
@@ -73,16 +71,12 @@ jobs:
             rm pr_comment.txt
           fi
 
-      - uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-      
-      - name: Clean Up preview
+      - name: Clean Up outdated preview
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          NUMBER: ${{ github.event.issue.number }}
         run: |
+          git fetch origin gh-pages
+          git checkout gh-pages
+          git pull origin gh-pages
           for dir in $(ls -d pr-*); do
             NUMBER=$(echo $dir | sed 's/pr-//')
             PR_STATE=$(gh pr view "${NUMBER}" --json state -q '.state')
