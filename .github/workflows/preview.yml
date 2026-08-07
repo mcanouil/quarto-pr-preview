@@ -54,7 +54,7 @@ jobs:
 
       - name: Get GitHub Pages meta
         id: gh-pages-meta
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Post Comment
         shell: bash
